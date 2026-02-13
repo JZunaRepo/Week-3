@@ -1,0 +1,41 @@
+---
+title: "Week3AAssignmentApproach"
+author: "Jonnathan Zuna Largo"
+format: html
+editor: visual
+---
+
+## Introduction
+
+For this project, I will work with a time series dataset that includes multiple items tracked over time. A practical example would be end of day stock or cryptocurrency prices starting from January 1, 2022. The goal is to analyze how each item evolves over time and compute rolling summary metrics that help smooth short term volatility and highlight trends.
+
+Specifically, I will calculate two metrics for each item:
+
+1.  The year to date (YTD) average, which reflects the cumulative average price within each calendar year.
+2.  The six day moving average, which smooths daily fluctuations and provides short-term trend insight. To accomplish this, I will rely on window functions, in SQL or using dplyr in R, to ensure calculations are performed separately for each item while preserving chronological order.
+
+## Approach
+
+First, I will ensure the dataset is structured properly, containing at minimum:
+
+-   A date column
+-   An item identifier (ex: ticker symbol or coin name)
+-   A numeric value (ex: closing price)
+
+The data will be sorted by item and date to maintain correct time order. To compute the YTD average, I will:
+
+-   Partition the data by both item and calendar year.
+-   Order observations by date within each partition.
+
+Apply a cumulative average window function from the start of the year up to the current row. For the six day moving average, I will:
+
+-   Partition by item.
+-   Order by date.
+-   Apply a rolling window covering the current day and the previous five days.
+
+Both calculations will use window functions so that values are computed row by row without collapsing the dataset. The final output will retain the original observations along with the two newly calculated columns.
+
+## Potential Roadblocks
+
+There are several potential roadblocks to consider when implementing these calculations. One issue is missing or irregular dates, since financial and cryptocurrency markets may exclude weekends or holidays, which can affect rolling calculations if the window assumes consecutive calendar days rather than consecutive observations.\
+Additionally, during the first few days of each item’s time series, there may be fewer than six observations available for the moving average, requiring a clear decision on whether to compute partial averages or return missing values until the full window size is reached.
