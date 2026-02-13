@@ -1,0 +1,26 @@
+---
+title: "Week3AAssignmentApproach"
+author: "Jonnathan Zuna Largo"
+format: html
+editor: visual
+---
+
+## Introduction
+
+For this project, I will use the movie rating survey data I collected and implement a Global Baseline Estimate recommender system in R. This method produces solid recommendations using only overall patterns in the ratings, specifically, how a user tends to rate compared to the average, and how a movie tends to be rated compared to the average. The implementation will follow the exact calculation logic provided in the Requirements of this assignmnet, but instead of doing it manually in Excel, I’ll reproduce the same steps programmatically in R using the data stored in my Postgres app.
+
+## Approach
+
+I will start by pulling the rating table from Postgres into R (same as assignment Week2A) and preparing the data so each record represents one user movie rating observation. From there, I will replicate the spreadsheet’s baseline algorithm:
+
+-   Calculate the global mean rating across all survey ratings
+-   Calculate each user’s average rating and convert it into a user bias by subtracting the global mean rating, and
+-   Calculate each movie’s average rating and convert it into a movie bias by subtracting the global mean rating.
+
+Once those components are calculated, the predicted rating for a given user and movie is built using the Global Baseline formula: predicted rating = global mean rating + user bias + movie bias
+
+Finally, to generate a recommendation, I will compute predicted ratings for the movies a user has not rated yet and recommend the movie with the highest predicted score.
+
+## Possible Roadblocks
+
+Because this survey was taken from family and friends, this is a non personalized baseline method, it may produce reasonable but sometimes bland recommendations since the survey people tend to have a tendency in what movies they like and predictions can also fall outside the allowed rating scale unless I decide on a consistent rule for bounding or interpreting the results.
