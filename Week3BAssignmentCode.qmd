@@ -1,0 +1,75 @@
+---
+title: "Week3BAssignmentCode"
+author: "Jonnathan Zuna Largo"
+format: html
+editor: visual
+---
+
+## Introduction
+
+For this project, I will work with a time series dataset that includes multiple items tracked over time. A practical example would be end of day stock or cryptocurrency prices starting from January 1, 2022. The goal is to analyze how each item evolves over time and compute rolling summary metrics that help smooth short term volatility and highlight trends.
+
+Specifically, I will calculate two metrics for each item:
+
+1.  The year to date (YTD) average, which reflects the cumulative average price within each calendar year.
+2.  The six day moving average, which smooths daily fluctuations and provides short-term trend insight. To accomplish this, I will rely on window functions, in SQL or using dplyr in R, to ensure calculations are performed separately for each item while preserving chronological order.
+
+## Body
+
+### Analysis
+
+For this project I will use a package called "Tidyquat" similar to a famous package use in python "yfinance". In the next line I will install and load the package to later use it for analysis.
+
+source: <https://dev.to/lemon-markets/10-great-r-packages-for-stock-market-data-1ocp>
+
+```{r}
+## install.packages("tidyquant") Note: Uncomment if the package is not intalled
+library(tidyquant)
+library(tidyverse)
+```
+
+Creating the dataframe. Additionally, I will use 3 stocks of my choice (currently in my portfolio) for this analysis. Which are NVIDIA (NVDA), APPLE (AAPL) and Microsoft (MSFT).
+
+```{r}
+stocks <- tq_get(c("NVDA", "AAPL", "MSFT"),
+                 from = "2022-01-01",
+                 get = "stock.prices") %>%
+  select(symbol, date, close)
+```
+
+Transforming the attribute date to year for the first task of this analysis.
+
+```{r}
+stocks <- stocks %>%
+  mutate(year = format(date, "%Y"))
+```
+
+The following code partitions the stock by year then orders by date and computes the cummulative mean from the start of each year for each stock.
+
+```{r}
+stocks <- stocks %>%
+  arrange(symbol, date) %>%
+  group_by(symbol, year) %>%
+  mutate(ytd_avg = cummean(close)) %>%
+  ungroup()
+```
+
+```{r}
+head(stocks)
+```
+
+In SQL for windows functions we can use "Partition by" then "Order by" and assign the movig average with "Rows Between (6) Preceding and current row", in the following code, the function "roolmean()" from the package zoo was utilized to calculate the moving average.
+
+```{r}
+stocks <- stocks %>%
+  arrange(symbol, date) %>%
+  group_by(symbol) %>%
+  mutate(ma_6day = zoo::rollmean(close, k = 6, fill = NA, align = "right")) %>%
+  ungroup()
+```
+
+Anthropic. (2025). Claude Opus 4.5 \[Large language model\]. https://claude.ai. Accessed February 8, 2026.
+
+## Conclusion
+
+This analysis demostrated how window functions can be used to analyze time series data such as stocks, for multiple companies without collapsing the dataset. The year and 6 day moving average was performed in the stocks of NVIDIA, APPLE, and Microsoft. Given my famililarity with SQL this project was performed using R stuio making window functions and ordering control computations.
