@@ -1,0 +1,113 @@
+---
+title: "Week3AAssignmentCode"
+author: "Jonnathan Zuna Largo"
+format: html
+editor: visual
+---
+
+## Introduction
+
+For this project, I will use the movie rating survey data I collected and implement a Global Baseline Estimate recommender system in R. This method produces solid recommendations using only overall patterns in the ratings, specifically, how a user tends to rate compared to the average, and how a movie tends to be rated compared to the average. The implementation will follow the exact calculation logic provided in the requirements of this assignmnet, but instead of doing it manually in Excel, I’ll reproduce the same steps programmatically in R using the data stored in my Postgres app.
+
+## Body
+
+### Postgres Set up
+
+```{r}
+library(DBI)
+library(RPostgres)
+library(tidyverse)
+```
+
+Connecting to databse
+
+```{r}
+con <- DBI::dbConnect(
+  RPostgres::Postgres(),
+  dbname = "movies_db",
+  host = "localhost",
+  port = 5432,
+  user = Sys.getenv("DB_USER"),
+  password = Sys.getenv("DB_PASSWORD")
+)
+```
+
+```{r}
+movies <- dbReadTable(con, "final_movie_ratings")
+glimpse(movies)
+```
+
+### Analysis
+
+The tab "MeanCenteredMovieRatings" calculates the means of only rated movies, therefore, in the next step NAs will be removed.
+
+```{r}
+ratings_obs <- movies %>%
+  filter(!is.na(rating))
+```
+
+Calculating over all average accross all users and movies. As showon in tab "Global Baseline" H18
+
+```{r}
+global_mean <- ratings_obs %>%
+  summarise(global_mean = mean(rating)) %>%
+  pull(global_mean)
+
+global_mean
+```
+
+Next is to calculate the user average as shown in tab "Global Baseline" Column H
+
+```{r}
+user_bias <- ratings_obs %>%
+  group_by(user_id) %>%
+  summarise(user_avg = mean(rating)) %>%
+  mutate(user_bias = user_avg - global_mean)
+
+user_bias
+```
+
+Movie Average as shown in rows B18 to G18 and Movies Bias as in rows B19 to G19
+
+```{r}
+movie_bias <- ratings_obs %>%
+  group_by(movie) %>%
+  summarise(movie_avg = mean(rating)) %>%
+  mutate(movie_bias = movie_avg - global_mean)
+
+movie_bias
+```
+
+Merge Main Dataframe with calculations as shown in row 25, but instead this calculation will be applied to all the users (surveryed sample).
+
+```{r}
+df_baseline <- movies %>%
+  left_join(user_bias %>% select(user_id, user_bias),
+            by = "user_id") %>%
+  left_join(movie_bias %>% select(movie, movie_bias),
+            by = "movie")
+```
+
+```{r}
+df_baseline <- df_baseline %>%
+  mutate(predicted_rating = global_mean + user_bias + movie_bias)
+```
+
+The following table represents the results shown in A26 "Global Baseline"
+
+```{r}
+recommendations <- df_baseline %>%
+  filter(is.na(rating)) %>%
+  group_by(user_id) %>%
+  arrange(desc(predicted_rating)) %>%
+  slice(1) %>%
+  ungroup()
+```
+
+```{r}
+head(recommendations)
+```
+
+### Conclusion
+
+This project successfully implemented a Global Baseline Estimate recommender system in R using the movie survey data stored in Postgres. By calculating the global mean rating, user bias, and movie bias, I was able to generate predicted ratings for movies that users had not yet rated.
